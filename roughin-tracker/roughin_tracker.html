@@ -498,8 +498,11 @@ function handleUpload(file) {
 function parseCableRows(rows) {
   var cables = [], headerRow = -1;
   for (var i=0; i<rows.length; i++) {
-    var rs = rows[i].join('|').toLowerCase();
-    if (rs.includes('cable/pairid') || rs.includes('cable id') || rs.includes('cableid')) { headerRow = i; break; }
+    var found = rows[i].some(function(cell) {
+      var c = String(cell).toLowerCase().trim();
+      return c === 'cable/pairid' || c === 'cable id' || c === 'cableid' || c.startsWith('cable/pair');
+    });
+    if (found) { headerRow = i; break; }
   }
   var colMap = {};
   if (headerRow >= 0) {
