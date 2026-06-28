@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cable Schematic — Batemans Bay HS Recording Studio</title>
+<style>
+  :root {
+    --bg:#0a0e17; --surface:#0f1623; --surface2:#141e2e; --border:#1e2d45;
+    --text:#d8e4f0; --text-muted:#6a85a8; --text-dim:#3a5070;
+    --cat6a:#7c6ff0; --sdi:#f59e0b; --audio:#22c55e;
+    --rack:#1a2540; --rack-border:#2a3d60;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; font-size: 13px; }
+
+  header {
+    padding: 14px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+  .hdr-title { font-size: 15px; font-weight: 700; }
+  .hdr-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .hdr-badge { background: #0057b8; color: #fff; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 4px; }
+
+  .legend {
+    display: flex; gap: 16px; padding: 10px 20px;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); }
+  .legend-dot { width: 12px; height: 3px; border-radius: 2px; }
+  .legend-count { font-size: 10px; color: var(--text-dim); }
+
+  .controls {
+    display: flex; gap: 8px; padding: 10px 20px;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    flex-wrap: wrap; align-items: center;
+  }
+  .ctrl-btn {
+    font-size: 11px; padding: 4px 12px; border-radius: 20px;
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text-muted); cursor: pointer; font-family: inherit;
+  }
+  .ctrl-btn:hover { border-color: #0057b8; color: #6ba3e0; }
+  .ctrl-btn.active { background: rgba(0,87,184,0.15); border-color: #0057b8; color: #6ba3e0; font-weight: 700; }
+  .ctrl-label { font-size: 11px; color: var(--text-dim); }
+
+  .schematic {
+    display: flex;
+    gap: 0;
+    min-height: calc(100vh - 130px);
+    overflow-x: auto;
+  }
+
+  /* RACK COLUMN */
+  .rack-col {
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--rack);
+    border-right: 2px solid var(--rack-border);
+    padding: 16px 0;
+    position: sticky;
+    left: 0;
+    z-index: 10;
+  }
+  .rack-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--text-dim); padding: 0 14px 10px; border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .rack-section { margin-bottom: 4px; }
+  .rack-section-hdr {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--text-dim); padding: 6px 14px 4px;
+  }
+  .rack-port {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 14px 4px 10px; cursor: pointer;
+    transition: background 0.1s; position: relative;
+  }
+  .rack-port:hover { background: rgba(255,255,255,0.04); }
+  .rack-port.highlighted { background: rgba(255,255,255,0.06); }
+  .rack-port-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    border: 1.5px solid currentColor;
+  }
+  .rack-port-label { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text-muted); flex: 1; }
+  .rack-port-connector { font-size: 10px; color: var(--text-dim); text-align: right; }
+  .rack-port::after {
+    content: ''; position: absolute; right: -2px; top: 50%; transform: translateY(-50%);
+    width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .rack-port.highlighted::after { opacity: 0.6; }
+
+  /* WIRE CANVAS */
+  .canvas-col {
+    flex: 0 0 auto;
+    position: relative;
+    overflow: hidden;
+  }
+  canvas#schematic-canvas {
+    display: block;
+  }
+
+  /* DESTINATION COLUMN */
+  .dest-col {
+    flex: 1;
+    min-width: 280px;
+    padding: 16px 0;
+    background: var(--surface);
+  }
+  .dest-location {
+    margin-bottom: 2px;
+  }
+  .dest-location-hdr {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px 6px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .dest-location-hdr:hover { background: rgba(255,255,255,0.02); }
+  .dest-loc-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dest-loc-name { font-size: 12px; font-weight: 700; color: var(--text); flex: 1; }
+  .dest-loc-count { font-size: 10px; color: var(--text-dim); }
+  .dest-loc-chevron { font-size: 10px; color: var(--text-dim); transition: transform 0.2s; }
+  .dest-location.open .dest-loc-chevron { transform: rotate(180deg); }
+  .dest-ports { display: none; padding: 0 14px 8px 32px; }
+  .dest-location.open .dest-ports { display: block; }
+  .dest-port {
+    display: flex; align-items: center; gap: 8px;
+    padding: 3px 0; cursor: pointer; transition: opacity 0.15s;
+  }
+  .dest-port:hover { opacity: 0.8; }
+  .dest-port.highlighted { background: rgba(255,255,255,0.04); border-radius: 4px; padding: 3px 6px; margin: 0 -6px; }
+  .dest-port-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; border: 1.5px solid currentColor; }
+  .dest-port-id { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text-muted); min-width: 90px; }
+  .dest-port-info { font-size: 10px; color: var(--text-dim); }
+
+  .tooltip {
+    position: fixed; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 12px; font-size: 11px; color: var(--text);
+    pointer-events: none; z-index: 200; max-width: 260px; display: none;
+    line-height: 1.5;
+  }
+  .tooltip strong { color: var(--text); display: block; margin-bottom: 3px; }
+  .tooltip span { color: var(--text-muted); }
+
+  .summary-bar {
+    display: grid; grid-template-columns: repeat(3,1fr);
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 0;
+  }
+  .summary-cell {
+    padding: 10px 16px; text-align: center; border-right: 1px solid var(--border);
+  }
+  .summary-cell:last-child { border-right: none; }
+  .summary-num { font-size: 22px; font-weight: 800; font-family: monospace; }
+  .summary-label { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-dim); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="hdr-title">Recording Studio — Cable Schematic</div>
+    <div class="hdr-sub">Batemans Bay High School · NSW Dept of Education · Beyond Network Solutions</div>
+  </div>
+  <div class="hdr-badge">BNS</div>
+</header>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--cat6a)"></div>CAT6A Data (TD01–TD40) <span class="legend-count">· 40 cables</span></div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--sdi)"></div>SDI Video (SDI-IN/OUT) <span class="legend-count">· 40 cables</span></div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--audio)"></div>Analogue Audio Multicore (MC01–MC20) <span class="legend-count">· 20 cables</span></div>
+</div>
+
+<div class="controls">
+  <span class="ctrl-label">Show:</span>
+  <button class="ctrl-btn active" onclick="setFilter('ALL',this)">All</button>
+  <button class="ctrl-btn" onclick="setFilter('CAT6A',this)">CAT6A</button>
+  <button class="ctrl-btn" onclick="setFilter('SDI',this)">SDI</button>
+  <button class="ctrl-btn" onclick="setFilter('AUDIO',this)">Audio</button>
+  <span class="ctrl-label" style="margin-left:8px">Click any cable to highlight its path</span>
+</div>
+
+<div class="schematic">
+  <div class="rack-col" id="rack-col">
+    <div class="rack-label">Equipment Rack</div>
+  </div>
+  <canvas id="schematic-canvas"></canvas>
+  <div class="dest-col" id="dest-col"></div>
+</div>
+
+<div class="summary-bar">
+  <div class="summary-cell"><div class="summary-num" style="color:var(--cat6a)">40</div><div class="summary-label">CAT6A Runs</div></div>
+  <div class="summary-cell"><div class="summary-num" style="color:var(--sdi)">40</div><div class="summary-label">SDI Runs</div></div>
+  <div class="summary-cell"><div class="summary-num" style="color:var(--audio)">20</div><div class="summary-label">Audio Multicores</div></div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const CABLES = [
+  // CAT6A
+  ...Array.from({length:40},(_,i)=>{
+    const n=String(i+1).padStart(2,'0');
+    const locs=['Stage Left','Stage Left','Stage Left','Stage Left','Stage Left','Stage Left','Stage Left','Stage Left',
+                'Stage Right','Stage Right','Stage Right','Stage Right','Stage Right','Stage Right','Stage Right','Stage Right',
+                'Performance Space Wall','Performance Space Wall','Performance Space Wall','Performance Space Wall',
+                'Performance Space Wall','Performance Space Wall','Performance Space Wall','Performance Space Wall',
+                'Performance Space Under Window','Performance Space Under Window','Performance Space Under Window','Performance Space Under Window',
+                'Performance Space Under Window','Performance Space Under Window','Performance Space Under Window','Performance Space Under Window',
+                'Studio Desk','Studio Desk','Studio Desk','Studio Desk','Studio Desk','Studio Desk','Studio Desk','Studio Desk'];
+    return {id:`TD${n}`,type:'CAT6A',cableType:'Siemon CAT6A F/UTP',colour:'Violet',
+            from:'Equipment Rack',fromPanel:'Siemon Z-MAX Hybrid — Patch Panel',
+            to:locs[i],toSocket:'Neutrik EtherCON IDC',toPanel:'PBE Box Wall Patch'};
+  }),
+  // SDI
+  ...(() => {
+    const locs=['Stage Left','Stage Right','Performance Space Wall','Performance Space Under Window','Studio Desk'];
+    let sdi=[];
+    locs.forEach((loc,li)=>{
+      for(let i=1;i<=4;i++) sdi.push({id:`SDI-IN-${String(li*4+i).padStart(2,'0')}`,type:'SDI',cableType:'Belden 4794R',colour:'Black',from:'Equipment Rack',fromPanel:'VideoHub — BNC',to:loc,toSocket:'Amphenol 75Ω BNC',toPanel:'PBE Box Wall Patch'});
+      for(let i=1;i<=4;i++) sdi.push({id:`SDI-OUT-${String(li*4+i).padStart(2,'0')}`,type:'SDI',cableType:'Belden 4794R',colour:'Black',from:'Equipment Rack',fromPanel:'VideoHub — BNC',to:loc,toSocket:'Amphenol 75Ω BNC',toPanel:'PBE Box Wall Patch'});
+    });
+    return sdi;
+  })(),
+  // Audio
+  ...(() => {
+    const boxes=[
+      {box:'Large Performance Space Box 1',panel:'MTL Panel 1',rtl:'RTL Panel 1'},
+      {box:'Large Performance Space Box 2',panel:'MTL Panel 2',rtl:'RTL Panel 1'},
+      {box:'Recording Booth Box 3',panel:'MTL Panel 3',rtl:'RTL Panel 1'},
+      {box:'Recording Booth Box 4',panel:'MTL Panel 4',rtl:'RTL Panel 1'},
+      {box:'Mixing Booth Box 5',panel:'MTL Panel 5',rtl:'RTL Panel 2'},
+    ];
+    let mc=[],n=1;
+    boxes.forEach(b=>{
+      for(let i=0;i<3;i++){mc.push({id:`MC${String(n).padStart(2,'0')}`,type:'AUDIO',cableType:'6-Pair Multicore',colour:'Grey',from:`Equip Rack — ${b.panel}`,fromPanel:b.panel,to:b.box,toSocket:'PBE Wall Box',desc:'Mic Tie Lines'});n++;}
+      mc.push({id:`MC${String(n).padStart(2,'0')}`,type:'AUDIO',cableType:'4-Pair Multicore',colour:'Grey',from:`Equip Rack — ${b.rtl}`,fromPanel:b.rtl,to:b.box,toSocket:'PBE Wall Box',desc:'Return Tie Lines'});n++;
+    });
+    return mc;
+  })(),
+];
+
+const TYPE_COLOUR = { CAT6A:'#7c6ff0', SDI:'#f59e0b', AUDIO:'#22c55e' };
+const LOC_COLOUR = {
+  'Stage Left':'#a78bfa','Stage Right':'#38bdf8',
+  'Performance Space Wall':'#fb923c','Performance Space Under Window':'#f472b6',
+  'Studio Desk':'#34d399',
+  'Large Performance Space Box 1':'#facc15','Large Performance Space Box 2':'#fde68a',
+  'Recording Booth Box 3':'#60a5fa','Recording Booth Box 4':'#93c5fd',
+  'Mixing Booth Box 5':'#f87171',
+};
+
+let activeFilter = 'ALL';
+let highlighted = null;
+let rackPortEls = {};
+let destPortEls = {};
+
+// ── BUILD RACK ────────────────────────────────────────
+function buildRack() {
+  const rack = document.getElementById('rack-col');
+  // Group by type then by panel
+  const groups = {
+    CAT6A: { label:'CAT6A — Data', cables: CABLES.filter(c=>c.type==='CAT6A') },
+    SDI:   { label:'SDI — Video',  cables: CABLES.filter(c=>c.type==='SDI') },
+    AUDIO: { label:'Audio — Multicore', cables: CABLES.filter(c=>c.type==='AUDIO') },
+  };
+  Object.entries(groups).forEach(([type,grp])=>{
+    const sec = document.createElement('div');
+    sec.className='rack-section';
+    sec.dataset.type=type;
+    const hdr=document.createElement('div');
+    hdr.className='rack-section-hdr';
+    hdr.style.color=TYPE_COLOUR[type];
+    hdr.textContent=grp.label;
+    sec.appendChild(hdr);
+    grp.cables.forEach(c=>{
+      const p=document.createElement('div');
+      p.className='rack-port';
+      p.dataset.id=c.id;
+      p.style.color=TYPE_COLOUR[type];
+      p.innerHTML=`<div class="rack-port-dot"></div><div class="rack-port-label">${c.id}</div><div class="rack-port-connector">${type==='CAT6A'?'RJ45':type==='SDI'?'BNC':'XLR'}</div>`;
+      p.addEventListener('click',()=>highlight(c.id));
+      p.addEventListener('mouseenter',(e)=>showTooltip(e,c));
+      p.addEventListener('mouseleave',hideTooltip);
+      sec.appendChild(p);
+      rackPortEls[c.id]=p;
+    });
+    rack.appendChild(sec);
+  });
+}
+
+// ── BUILD DESTINATIONS ────────────────────────────────
+function buildDests() {
+  const dest = document.getElementById('dest-col');
+  const locations = {};
+  CABLES.forEach(c=>{
+    if(!locations[c.to]) locations[c.to]=[];
+    locations[c.to].push(c);
+  });
+  Object.entries(locations).forEach(([loc,cables])=>{
+    const col=LOC_COLOUR[loc]||'#888';
+    const locDiv=document.createElement('div');
+    locDiv.className='dest-location open';
+    locDiv.dataset.loc=loc;
+    const hdr=document.createElement('div');
+    hdr.className='dest-location-hdr';
+    hdr.innerHTML=`<div class="dest-loc-dot" style="background:${col}"></div><div class="dest-loc-name">${loc}</div><div class="dest-loc-count">${cables.length} cables</div><div class="dest-loc-chevron">▾</div>`;
+    hdr.addEventListener('click',()=>locDiv.classList.toggle('open'));
+    locDiv.appendChild(hdr);
+    const ports=document.createElement('div');
+    ports.className='dest-ports';
+    cables.forEach(c=>{
+      const p=document.createElement('div');
+      p.className='dest-port';
+      p.dataset.id=c.id;
+      p.style.color=TYPE_COLOUR[c.type];
+      p.innerHTML=`<div class="dest-port-dot"></div><div class="dest-port-id">${c.id}</div><div class="dest-port-info">${c.toSocket||''}</div>`;
+      p.addEventListener('click',()=>highlight(c.id));
+      p.addEventListener('mouseenter',(e)=>showTooltip(e,c));
+      p.addEventListener('mouseleave',hideTooltip);
+      ports.appendChild(p);
+      destPortEls[c.id]=p;
+    });
+    locDiv.appendChild(ports);
+    dest.appendChild(locDiv);
+  });
+}
+
+// ── CANVAS WIRES ─────────────────────────────────────
+function drawWires() {
+  const canvas=document.getElementById('schematic-canvas');
+  const rack=document.getElementById('rack-col');
+  const dest=document.getElementById('dest-col');
+  const schematic=canvas.parentElement;
+
+  const totalH=Math.max(rack.scrollHeight,dest.scrollHeight,600);
+  canvas.width=140;
+  canvas.height=totalH;
+  schematic.style.minHeight=totalH+'px';
+
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  const visibleCables=CABLES.filter(c=>activeFilter==='ALL'||c.type===activeFilter);
+
+  visibleCables.forEach(c=>{
+    const rEl=rackPortEls[c.id];
+    const dEl=destPortEls[c.id];
+    if(!rEl||!dEl) return;
+    const rRect=rEl.getBoundingClientRect();
+    const dRect=dEl.getBoundingClientRect();
+    const schRect=canvas.getBoundingClientRect();
+    const ry=rRect.top-schRect.top+rRect.height/2;
+    const dy=dRect.top-schRect.top+dRect.height/2;
+
+    const col=TYPE_COLOUR[c.type];
+    const isHighlighted=highlighted===c.id;
+    const isDimmed=highlighted&&!isHighlighted;
+
+    ctx.beginPath();
+    ctx.moveTo(0,ry);
+    ctx.bezierCurveTo(canvas.width*0.4,ry,canvas.width*0.6,dy,canvas.width,dy);
+    ctx.strokeStyle=isDimmed?'rgba(255,255,255,0.03)':col+(isHighlighted?'':'55');
+    ctx.lineWidth=isHighlighted?2.5:0.8;
+    ctx.stroke();
+  });
+}
+
+// ── HIGHLIGHT ─────────────────────────────────────────
+function highlight(id) {
+  highlighted=highlighted===id?null:id;
+  Object.values(rackPortEls).forEach(el=>el.classList.remove('highlighted'));
+  Object.values(destPortEls).forEach(el=>el.classList.remove('highlighted'));
+  if(highlighted){
+    if(rackPortEls[highlighted]) rackPortEls[highlighted].classList.add('highlighted');
+    if(destPortEls[highlighted]) destPortEls[highlighted].classList.add('highlighted');
+    // Open the destination location if closed
+    const dEl=destPortEls[highlighted];
+    if(dEl){
+      const locDiv=dEl.closest('.dest-location');
+      if(locDiv&&!locDiv.classList.contains('open')) locDiv.classList.add('open');
+    }
+  }
+  requestAnimationFrame(drawWires);
+}
+
+// ── FILTER ───────────────────────────────────────────
+function setFilter(type,btn) {
+  activeFilter=type;
+  document.querySelectorAll('.ctrl-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  // Show/hide rack sections
+  document.querySelectorAll('.rack-section').forEach(sec=>{
+    sec.style.display=(type==='ALL'||sec.dataset.type===type)?'block':'none';
+  });
+  requestAnimationFrame(drawWires);
+}
+
+// ── TOOLTIP ───────────────────────────────────────────
+function showTooltip(e,c) {
+  const tt=document.getElementById('tooltip');
+  tt.innerHTML=`<strong>${c.id}</strong><span>${c.cableType}${c.colour?' · '+c.colour:''}</span><br><span>${c.from}</span><br><span>→ ${c.to}</span>${c.desc?`<br><span style="color:var(--text-dim)">${c.desc}</span>`:''}`;
+  tt.style.display='block';
+  tt.style.left=(e.clientX+12)+'px';
+  tt.style.top=(e.clientY-10)+'px';
+}
+function hideTooltip(){
+  document.getElementById('tooltip').style.display='none';
+}
+
+// ── RESIZE OBSERVER ───────────────────────────────────
+let resizeTimer;
+const ro=new ResizeObserver(()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer=setTimeout(drawWires,50);
+});
+
+// ── INIT ─────────────────────────────────────────────
+buildRack();
+buildDests();
+setTimeout(()=>{
+  ro.observe(document.getElementById('rack-col'));
+  ro.observe(document.getElementById('dest-col'));
+  drawWires();
+},100);
+
+// Redraw on scroll
+document.querySelector('.schematic').addEventListener('scroll',()=>requestAnimationFrame(drawWires));
+</script>
+</body>
+</html>
