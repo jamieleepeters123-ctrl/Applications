@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BNS Field Tools</title>
+<style>
+  :root {
+    --bg:#080c12; --surface:#0d1525; --surface2:#132035; --border:#1e3050;
+    --bns:#0057b8; --bns-l:#1a72d9; --bns-dim:rgba(0,87,184,0.15);
+    --text:#e8edf5; --muted:#7a90b0; --dim:#3d5070;
+    --green:#22c55e; --amber:#f59e0b; --purple:#a78bfa;
+    --font:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;}
+  header{background:var(--surface);border-bottom:1px solid var(--border);border-top:3px solid var(--bns);padding:20px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+  .hdr-logo img{height:32px;}
+  .hdr-logo-fallback{display:none;align-items:center;gap:10px;}
+  .hdr-badge{background:var(--bns);color:#fff;font-size:12px;font-weight:800;padding:4px 10px;border-radius:4px;letter-spacing:.08em;}
+  .hdr-right{font-size:12px;color:var(--dim);}
+  .hero{padding:32px 24px 16px;border-bottom:1px solid var(--border);}
+  .hero h1{font-size:22px;font-weight:800;margin-bottom:6px;}
+  .hero p{font-size:13px;color:var(--muted);max-width:560px;line-height:1.6;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;padding:24px;}
+  .app-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .15s;}
+  .app-card:hover{border-color:var(--bns);}
+  .app-card-header{padding:16px 16px 12px;display:flex;align-items:flex-start;gap:12px;}
+  .app-icon{font-size:28px;flex-shrink:0;}
+  .app-info{flex:1;}
+  .app-name{font-size:15px;font-weight:700;}
+  .app-desc{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5;}
+  .app-meta{display:flex;gap:8px;padding:0 16px 12px;flex-wrap:wrap;}
+  .tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;}
+  .tag-blue{background:var(--bns-dim);color:var(--bns-l);}
+  .tag-green{background:rgba(34,197,94,0.12);color:var(--green);}
+  .tag-amber{background:rgba(245,158,11,0.12);color:var(--amber);}
+  .tag-purple{background:rgba(167,139,250,0.12);color:var(--purple);}
+  .app-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .version{font-size:11px;color:var(--dim);font-family:monospace;}
+  .open-btn{background:var(--bns);color:#fff;font-size:12px;font-weight:700;padding:6px 14px;border-radius:6px;text-decoration:none;display:inline-block;}
+  .open-btn:hover{background:var(--bns-l);}
+  .changelog{margin:0 24px 24px;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+  .changelog-hdr{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;}
+  .changelog-item{display:flex;gap:12px;padding:10px 16px;border-bottom:1px solid rgba(30,48,80,0.5);}
+  .changelog-item:last-child{border-bottom:none;}
+  .cl-date{font-size:11px;color:var(--dim);font-family:monospace;white-space:nowrap;min-width:70px;}
+  .cl-app{font-size:11px;font-weight:700;min-width:80px;}
+  .cl-msg{font-size:12px;color:var(--muted);}
+  footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+  .footer-left{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dim);}
+  .footer-left img{height:14px;opacity:.4;}
+  @media(max-width:500px){.grid{grid-template-columns:1fr;padding:16px;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-logo">
+    <img src="https://beyondnetworksolutions.com.au/wp-content/uploads/2020/12/Beyond_Logo__New_White.svg"
+         alt="Beyond Network Solutions"
+         onerror="this.style.display='none';document.querySelector('.hdr-logo-fallback').style.display='flex'">
+    <div class="hdr-logo-fallback">
+      <div class="hdr-badge">BNS</div>
+      <span style="font-size:15px;font-weight:700">Beyond Network Solutions</span>
+    </div>
+  </div>
+  <div class="hdr-right">Field Tools Suite · jamieleepeters123-ctrl</div>
+</header>
+
+<div class="hero">
+  <h1>BNS Field Tools</h1>
+  <p>Internal tools for Beyond Network Solutions field technicians. All apps sync live via Firebase and work on any device.</p>
+</div>
+
+<div class="grid">
+
+  <div class="app-card">
+    <div class="app-card-header">
+      <div class="app-icon">📡</div>
+      <div class="app-info">
+        <div class="app-name">Rough-In Tracker</div>
+        <div class="app-desc">Track cable installation progress on site. Live sync across all devices. Tick off Ran, Terminated, Tested, Labelled per cable.</div>
+      </div>
+    </div>
+    <div class="app-meta">
+      <span class="tag tag-blue">Firebase Live Sync</span>
+      <span class="tag tag-green">Excel Export</span>
+      <span class="tag tag-amber">Multi-User</span>
+    </div>
+    <div class="app-footer">
+      <span class="version">v2.0</span>
+      <a class="open-btn" href="roughin-tracker/roughin_tracker.html">Open App →</a>
+    </div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-header">
+      <div class="app-icon">📋</div>
+      <div class="app-info">
+        <div class="app-name">Cable Schedule Creator</div>
+        <div class="app-desc">Build cable schedules from scratch. Add cables one-by-one or bulk import. Exports to Excel matching the BNS cable schedule format exactly.</div>
+      </div>
+    </div>
+    <div class="app-meta">
+      <span class="tag tag-blue">Firebase Live Sync</span>
+      <span class="tag tag-green">Excel Export</span>
+      <span class="tag tag-purple">Bulk Import</span>
+    </div>
+    <div class="app-footer">
+      <span class="version">v1.0</span>
+      <a class="open-btn" href="cable-schedule-creator/cable_schedule_creator.html">Open App →</a>
+    </div>
+  </div>
+
+  <div class="app-card">
+    <div class="app-card-header">
+      <div class="app-icon">🔌</div>
+      <div class="app-info">
+        <div class="app-name">Cable Schematic Viewer</div>
+        <div class="app-desc">Interactive visual schematic of cable runs. Click any cable to highlight its path. Filter by type. Hover for connector details.</div>
+      </div>
+    </div>
+    <div class="app-meta">
+      <span class="tag tag-purple">Interactive</span>
+      <span class="tag tag-amber">Read-Only</span>
+    </div>
+    <div class="app-footer">
+      <span class="version">v1.0</span>
+      <a class="open-btn" href="cable-schematic/cable_schematic.html">Open App →</a>
+    </div>
+  </div>
+
+</div>
+
+<div class="changelog">
+  <div class="changelog-hdr">📝 Recent Changes</div>
+  <div class="changelog-item">
+    <div class="cl-date">28 Jun 26</div>
+    <div class="cl-app" style="color:var(--green)">Creator</div>
+    <div class="cl-msg">Initial release — form entry, bulk import, Firebase sync, Excel export matching BNS template</div>
+  </div>
+  <div class="changelog-item">
+    <div class="cl-date">28 Jun 26</div>
+    <div class="cl-app" style="color:var(--purple)">Schematic</div>
+    <div class="cl-msg">Initial release — interactive cable path viewer with type filters and tooltips</div>
+  </div>
+  <div class="changelog-item">
+    <div class="cl-date">28 Jun 26</div>
+    <div class="cl-app" style="color:var(--bns-l)">Tracker</div>
+    <div class="cl-msg">Job picker from Firebase, BNS branding, Excel schedule upload, hardcoded BNS DB URL</div>
+  </div>
+  <div class="changelog-item">
+    <div class="cl-date">26 Jun 26</div>
+    <div class="cl-app" style="color:var(--bns-l)">Tracker</div>
+    <div class="cl-msg">Firebase live sync, multi-user support, area colour coding, export to Excel</div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-left">
+    <img src="https://beyondnetworksolutions.com.au/wp-content/uploads/2020/12/Beyond_Logo__New_White.svg" alt="">
+    Beyond Network Solutions · Internal Tools
+  </div>
+  <div style="font-size:11px;color:var(--dim)">Hosted on GitHub Pages</div>
+</footer>
+
+</body>
+</html>
