@@ -454,7 +454,14 @@ function showUploadUI() {
 
 function handleUpload(file) {
   var prog = document.getElementById('ul-progress');
-  prog.textContent = 'Reading file…';
+  var inApp = !prog && !!currentJobKey;
+  function setProgress(msg) {
+    if (prog) { prog.textContent = msg; return; }
+    var t = document.getElementById('saving-toast');
+    if (msg) { t.textContent = msg; t.classList.add('show'); }
+    else { setTimeout(function(){ t.classList.remove('show'); t.textContent = 'Saving…'; }, 2000); }
+  }
+  setProgress('Reading file…');
   loadSheetJS(function() {
     var reader = new FileReader();
     reader.onload = function(e) {
@@ -463,14 +470,26 @@ function handleUpload(file) {
         var ws = wb.Sheets[wb.SheetNames[0]];
         var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
         var cables = parseCableRows(rows);
-        if (!cables.length) { prog.textContent = 'No cables found. Check the file format.'; return; }
-        prog.textContent = 'Uploading ' + cables.length + ' cables…';
-        var jobName = file.name.replace(/\.xlsx$/i,'').replace(/_/g,' ');
-        var jobKey = jobName.toLowerCase().replace(/[^a-z0-9]+/g,'-');
-        cablesMetaRef.child(jobKey).set({jobName:jobName,cables:cables,uploadedBy:userName,uploadedAt:Date.now()})
-          .then(function(){ prog.textContent = ''; launchApp(cables, jobName, true, jobKey); })
-          .catch(function(err){ prog.textContent = 'Upload failed: ' + err.message; });
-      } catch(err) { prog.textContent = 'Could not read file: ' + err.message; }
+        if (!cables.length) { setProgress('No cables found. Check the file format.'); return; }
+        setProgress('Uploading ' + cables.length + ' cables…');
+        if (inApp) {
+          cablesMetaRef.child(currentJobKey).update({cables:cables,uploadedBy:userName,uploadedAt:Date.now()})
+            .then(function() {
+              CABLES = cables;
+              document.getElementById('cable-count-badge').textContent = cables.length + ' cables';
+              document.getElementById('total-count').textContent = cables.length;
+              buildLegend(); applyFilters();
+              setProgress('Schedule updated — ' + cables.length + ' cables');
+            })
+            .catch(function(err){ setProgress('Upload failed: ' + err.message); });
+        } else {
+          var jobName = file.name.replace(/\.xlsx$/i,'').replace(/_/g,' ');
+          var jobKey = jobName.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+          cablesMetaRef.child(jobKey).set({jobName:jobName,cables:cables,uploadedBy:userName,uploadedAt:Date.now()})
+            .then(function(){ setProgress(''); launchApp(cables, jobName, true, jobKey); })
+            .catch(function(err){ setProgress('Upload failed: ' + err.message); });
+        }
+      } catch(err) { setProgress('Could not read file: ' + err.message); }
     };
     reader.readAsArrayBuffer(file);
   });
